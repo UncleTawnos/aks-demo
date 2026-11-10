@@ -1,0 +1,43 @@
+# Gateway API = the modern way to route HTTP traffic from outside into the cluster
+# (the successor of Ingress). Three pieces, three roles:
+#
+#   GatewayClass  -> WHICH software handles traffic (here: Envoy Gateway)   [cluster admin]
+#   Gateway       -> WHERE traffic enters (gets its own public IP, port 80)  [platform team]
+#   HTTPRoute     -> WHAT goes where (path /  ->  Service "web")             [app team]
+#
+# Requires Envoy Gateway to be installed first - see README.md.
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: eg                # cluster-wide, so no namespace
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: web-gateway
+  namespace: demo
+spec:
+  gatewayClassName: eg
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: web
+  namespace: demo
+spec:
+  parentRefs:
+    - name: web-gateway   # attach this route to the Gateway above
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: web       # the ClusterIP Service from 30-service-clusterip.yaml
+          port: 80

@@ -1,0 +1,15 @@
+# Service type ClusterIP (the default) = a stable internal address.
+# Reachable ONLY from inside the cluster, as http://web (same namespace)
+# or http://web.demo.svc.cluster.local (from anywhere in the cluster).
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: demo
+spec:
+  type: ClusterIP
+  selector:
+    app: web          # send traffic to pods with this label
+  ports:
+    - port: 80        # port of the Service
+      targetPort: 80  # port of the container

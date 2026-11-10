@@ -1,0 +1,49 @@
+# A tiny pod that only prints its configuration, so we can SEE how
+# ConfigMaps and Secrets arrive inside a container.
+#   kubectl logs -n demo config-reader
+apiVersion: v1
+kind: Pod
+metadata:
+  name: config-reader
+  namespace: demo
+spec:
+  containers:
+    - name: reader
+      image: busybox:1.37
+      command:
+        - sh
+        - -c
+        - |
+          while true; do
+            echo "--- environment variables ---"
+            echo "APP_COLOR=$APP_COLOR  APP_MODE=$APP_MODE"
+            echo "DB_USER=$DB_USER  DB_PASSWORD=$DB_PASSWORD"
+            echo "--- files in /etc/api-keys ---"
+            for f in /etc/api-keys/*; do echo "$f = $(cat $f)"; done
+            echo "--- TLS files in /etc/tls (base64 already decoded) ---"
+            for f in /etc/tls/*; do echo "$f: $(head -1 $f)"; done
+            sleep 30
+          done
+      # ConfigMap as env: every key becomes an environment variable.
+      # Secret as env: same idea, values come from the Secret.
+      envFrom:
+        - configMapRef:
+            name: app-settings
+        - secretRef:
+            name: db-credentials
+      # Secret as directory: every key becomes a file in /etc/api-keys.
+      volumeMounts:
+        - name: api-keys
+          mountPath: /etc/api-keys
+          readOnly: true
+        # TLS Secret (base64 "data") as files: /etc/tls/tls.crt and /etc/tls/tls.key
+        - name: tls
+          mountPath: /etc/tls
+          readOnly: true
+  volumes:
+    - name: api-keys
+      secret:
+        secretName: api-keys
+    - name: tls
+      secret:
+        secretName: demo-tls

@@ -1,0 +1,7 @@
+# A Namespace is a "folder" inside the cluster.
+# Everything in this demo lives in "demo", so cleanup is one command:
+#   kubectl delete namespace demo
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo

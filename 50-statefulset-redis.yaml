@@ -1,0 +1,57 @@
+# StatefulSet = like a Deployment, but for apps that store data.
+# - pods get stable names: redis-0, redis-1 (not random suffixes)
+# - each pod gets its OWN disk (PersistentVolumeClaim) that survives pod restarts
+#
+# Note: the two redis pods are independent servers, not a replicated cluster.
+# The point here is "each pod keeps its own data".
+
+# Headless Service (clusterIP: None) gives each pod its own DNS name:
+#   redis-0.redis.demo.svc.cluster.local
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: demo
+spec:
+  clusterIP: None
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: demo
+spec:
+  serviceName: redis
+  replicas: 2
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.4
+          args: ["--appendonly", "yes"]   # write data to disk, not just memory
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  # One PVC per pod is created from this template: data-redis-0, data-redis-1.
+  # PVCs are NOT deleted with the StatefulSet - your data is safe by default.
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: managed-csi   # AKS built-in: Azure Disk
+        resources:
+          requests:
+            storage: 1Gi

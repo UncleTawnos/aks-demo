@@ -1,0 +1,16 @@
+# Service type NodePort = opens the same port (30080) on EVERY node.
+# http://<any-node-ip>:30080 reaches the app.
+# On AKS nodes have only private IPs, so this works from inside the VNet only.
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-nodeport
+  namespace: demo
+spec:
+  type: NodePort
+  selector:
+    app: web
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080   # must be in the 30000-32767 range

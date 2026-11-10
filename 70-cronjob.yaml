@@ -1,0 +1,18 @@
+# CronJob = run a short task on a schedule (like cron on Linux).
+# Every minute a new Job -> new Pod is created, prints a line, and exits.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hello-cron
+  namespace: demo
+spec:
+  schedule: "*/1 * * * *"   # every minute (minute hour day month weekday)
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: hello
+              image: busybox:1.37
+              command: ["sh", "-c", "echo Hello from CronJob at $(date)"]

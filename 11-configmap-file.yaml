@@ -1,0 +1,12 @@
+# This ConfigMap is mounted as a FILE.
+# Each key becomes a file name, each value becomes the file content.
+# The "web" Deployment (20-deployment-web.yaml) serves it as its home page.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-content
+  namespace: demo
+data:
+  index.html: |
+    <h1>Hello from Kubernetes!</h1>
+    <p>This page comes from the ConfigMap "web-content".</p>

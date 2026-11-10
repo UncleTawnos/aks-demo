@@ -1,0 +1,53 @@
+# Deployment = "keep N identical copies (replicas) of my app running".
+# If a pod dies, the Deployment creates a new one.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: demo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web            # which pods belong to this Deployment
+  template:               # the pod "blueprint"
+    metadata:
+      labels:
+        app: web          # Services find these pods by this label
+    spec:
+      # Run only on nodes of the "apps" node pool (AKS adds this label to every node it creates).
+      nodeSelector:
+        kubernetes.azure.com/agentpool: apps
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 80
+          # requests = what the scheduler RESERVES on a node for this container
+          #            (pod only lands on a node with this much free).
+          # limits   = the HARD ceiling while it runs:
+          #            CPU over the limit -> slowed down (throttled),
+          #            memory over the limit -> container killed (OOMKilled) and restarted.
+          resources:
+            requests:
+              cpu: 50m        # 50 millicores = 5% of one CPU core
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            # Ephemeral storage: nginx keeps its cache/temp files here.
+            - name: cache
+              mountPath: /var/cache/nginx
+            # ConfigMap as a file: replaces the default nginx home page.
+            - name: content
+              mountPath: /usr/share/nginx/html
+      volumes:
+        # emptyDir = scratch space that lives as long as the pod.
+        # Pod deleted -> data gone. Perfect for caches, useless for databases.
+        - name: cache
+          emptyDir:
+            sizeLimit: 100Mi
+        - name: content
+          configMap:
+            name: web-content

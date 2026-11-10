@@ -1,0 +1,14 @@
+# Service type LoadBalancer = asks the cloud (Azure) for a public IP.
+# After a minute, EXTERNAL-IP appears in: kubectl get svc -n demo web-public
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-public
+  namespace: demo
+spec:
+  type: LoadBalancer
+  selector:
+    app: web
+  ports:
+    - port: 80
+      targetPort: 80

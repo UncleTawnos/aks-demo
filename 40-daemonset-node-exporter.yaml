@@ -1,0 +1,26 @@
+# DaemonSet = "run exactly ONE copy of this pod on EVERY node".
+# Typical use: agents that watch the node itself (monitoring, log shipping).
+# Add a node to the cluster -> a new node-exporter pod appears on it automatically.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: demo
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux   # skip Windows nodes, the image is Linux-only
+      containers:
+        - name: node-exporter
+          image: quay.io/prometheus/node-exporter:v1.12.1
+          ports:
+            - containerPort: 9100   # metrics at http://<pod-ip>:9100/metrics
+          # Kept minimal on purpose: no hostNetwork / host filesystem mounts, so disk and
+          # network metrics describe the container, not the node. Production setups add them.

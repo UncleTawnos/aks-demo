@@ -1,0 +1,60 @@
+# HorizontalPodAutoscaler (HPA) = add/remove replicas based on load.
+# Uses the official Kubernetes demo app "hpa-example", which burns CPU on every request.
+# AKS ships metrics-server out of the box, which the HPA needs to read CPU usage.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-apache
+  namespace: demo
+spec:
+  # No "replicas:" here on purpose - the HPA below owns the replica count.
+  # With a fixed number, every "kubectl apply" would reset it and fight the HPA.
+  selector:
+    matchLabels:
+      app: php-apache
+  template:
+    metadata:
+      labels:
+        app: php-apache
+    spec:
+      containers:
+        - name: php-apache
+          image: registry.k8s.io/hpa-example
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 200m   # REQUIRED: the HPA computes "% of this request"
+            limits:
+              cpu: 500m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: php-apache
+  namespace: demo
+spec:
+  selector:
+    app: php-apache
+  ports:
+    - port: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: php-apache
+  namespace: demo
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: php-apache
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50   # aim for 50% of the 200m request per pod

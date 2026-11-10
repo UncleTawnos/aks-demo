@@ -1,0 +1,10 @@
+# ConfigMap = plain (non-secret) settings stored in the cluster.
+# This one is consumed as ENVIRONMENT VARIABLES by the "config-reader" pod (21-config-reader.yaml).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-settings
+  namespace: demo
+data:
+  APP_COLOR: "blue"
+  APP_MODE: "demo"
