@@ -63,8 +63,8 @@ Then follow the [walkthrough](#2-walk-through-each-concept) below, one concept a
 | `10-configmap-env.yaml` | ConfigMap used as environment variables |
 | `11-configmap-file.yaml` | ConfigMap used as a file (nginx home page) |
 | `12-secret-env.yaml` | Secret used as environment variables |
-| `13-secret-dir.yaml` | Secret used as a directory of files |
-| `14-secret-tls.yaml` | TLS Secret (SSL cert + key) with base64 `data`, mounted as files |
+| `13-secret-files.yaml` | Secret mounted file by file (`subPath`) into an existing directory |
+| `14-secret-tls.yaml` | TLS Secret (SSL cert + key) with base64 `data`, mounted as a directory |
 | `20-deployment-web.yaml` | Deployment, 3 replicas, `emptyDir` cache, CPU/memory requests and limits, pinned to the `apps` node pool |
 | `21-config-reader.yaml` | Pod that prints the ConfigMaps/Secrets it received |
 | `30-service-clusterip.yaml` | Service: ClusterIP (internal only) |
@@ -144,14 +144,25 @@ kubectl delete -n demo $POD
 
 ```sh
 kubectl logs -n demo config-reader         # env vars and secret files, as the app sees them
-kubectl exec -n demo config-reader -- ls /etc/api-keys
 kubectl get secret db-credentials -n demo -o yaml   # values are base64, NOT encrypted
 ```
+
+Two ways to mount a Secret as files:
+
+- **File by file (`subPath`)**: the API keys land as single files inside the existing `/etc`, and the rest of `/etc` stays visible. These files do NOT update when the Secret changes.
+- **Whole directory**: the TLS Secret becomes the directory `/etc/tls`, one file per key. These files DO update when the Secret changes (within about a minute).
+
+```sh
+kubectl exec -n demo config-reader -- ls /etc            # payment-api.key and weather-api.key next to passwd, hosts, ...
+kubectl exec -n demo config-reader -- cat /etc/payment-api.key
+kubectl exec -n demo config-reader -- ls -l /etc/tls     # tls.crt -> ..data/tls.crt (symlinks)
+```
+
+Why only the directory updates: its files are symlinks into a hidden `..data` folder, which Kubernetes swaps all at once when the Secret changes. A `subPath` file is a plain copy made when the container starts.
 
 TLS Secret: stored as base64 in the YAML, but a normal PEM file inside the pod:
 
 ```sh
-kubectl exec -n demo config-reader -- ls /etc/tls                       # tls.crt  tls.key
 kubectl exec -n demo config-reader -- head -1 /etc/tls/tls.crt          # -----BEGIN CERTIFICATE-----
 kubectl get secret demo-tls -n demo -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -subject -enddate
 ```
