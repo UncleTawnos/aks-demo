@@ -56,6 +56,7 @@ Then follow the [walkthrough](#2-walk-through-each-concept) below, one concept a
 |---|---|
 | `terraform/` | A minimal AKS cluster: Free tier, public API, `system` + `apps` node pools |
 | `*.yaml` | The demo manifests, numbered in apply order |
+| `docker/` | Separate Docker demos: image layers, a leaked secret, multi-stage builds. See [docker/README.md](docker/README.md) |
 
 | File | Concept |
 |---|---|

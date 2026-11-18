@@ -1,0 +1,7 @@
+# GOOD: the key is mounted only while this one RUN executes. It is never written to a layer.
+FROM alpine:3.24
+WORKDIR /app
+
+RUN --mount=type=secret,id=key sha256sum /run/secrets/key > fingerprint.txt
+
+CMD ["ls", "-la", "/app"]

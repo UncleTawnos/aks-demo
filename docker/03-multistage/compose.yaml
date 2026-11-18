@@ -1,0 +1,14 @@
+# Local development: builds only up to the "localdev" stage of the Dockerfile.
+services:
+  app:
+    build:
+      context: .
+      target: localdev
+    ports:
+      - "8888:8080"   # host:container
+    volumes:
+      - ./src:/app/src   # your source code, live from the host
+    develop:
+      watch:
+        - path: ./src
+          action: restart   # "docker compose up --watch" restarts the app on every save
